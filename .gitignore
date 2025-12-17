@@ -1,0 +1,6 @@
+
+node_modules/
+backend/database/tutor.db
+backend/uploads/
+.env
+*.zip
