@@ -1,0 +1,38 @@
+server {
+    listen 80;
+    server_name thecharmingprogrammer.com www.thecharmingprogrammer.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name thecharmingprogrammer.com www.thecharmingprogrammer.com;
+
+    ssl_certificate /etc/letsencrypt/live/thecharmingprogrammer.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/thecharmingprogrammer.com/privkey.pem;
+
+    # Root points to your Vite BUILD folder
+    root /home/ubuntu/Operation_Spectre/frontend/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API Proxy
+    location /api {
+        proxy_pass http://localhost:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Video Files (The fix for the video player)
+    location /uploads {
+        alias /home/ubuntu/Operation_Spectre/backend/uploads;
+        add_header Access-Control-Allow-Origin *;
+        autoindex on;
+    }
+}

@@ -1,6 +1,14 @@
-
+# Dependency folders
 node_modules/
-backend/database/tutor.db
+frontend/node_modules/
+backend/node_modules/
+
+# Local Database and Uploads (Keep these on the server only)
+backend/database/
 backend/uploads/
-.env
-*.zip
+backend/temp_code/
+
+# System and logs
+*.log
+.DS_Store
+dist/

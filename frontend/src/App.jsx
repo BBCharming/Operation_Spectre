@@ -1,144 +1,331 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Editor from '@monaco-editor/react';
-import { Video, BookOpen, User, LogOut, Upload, Play, MonitorPlay, Trash2, Youtube, CheckCircle, Brain, Code, ArrowLeft, Menu, X, Plus, ArrowRight, Link as LinkIcon, Edit, ChevronLeft, ChevronRight, DollarSign, Smartphone, ArrowUp, ArrowDown, Users, Lock, ShieldCheck, Terminal, RefreshCw } from 'lucide-react';
+import { 
+  Video, LogOut, Upload, Play, MonitorPlay, Trash2, Brain, 
+  ArrowLeft, Menu, X, Plus, Link as LinkIcon, Lock, 
+  ChevronRight, Edit, ArrowUp, ArrowDown, Terminal 
+} from 'lucide-react';
 
 const API = '/api';
-const getYouTubeID = (url) => { if(!url) return null; try { const r = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/; const m = url.match(r); return (m && m[2].length === 11) ? m[2] : null; } catch(e) { return null; } };
 
-// COMPONENTS
-const Footer = () => (
-    <div className="bg-slate-900 text-slate-500 text-xs py-4 text-center border-t border-slate-800">
-        <p>&copy; 2025 The Charming Programmer. All Rights Reserved.</p>
-        <p>Built for CBU Students. "Operation Spectre"</p>
-    </div>
-);
-
-const LandingPage = ({ setView }) => (
-  <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
-    <nav className="flex justify-between items-center p-6 max-w-6xl mx-auto w-full"><div className="flex items-center gap-2 text-indigo-700 font-bold text-xl"><Brain size={28}/> The Charming Programmer</div><button onClick={()=>setView('login')} className="bg-indigo-600 text-white px-6 py-2 rounded-full hover:bg-indigo-700 transition">Student Login</button></nav>
-    <div className="text-center mt-20 px-4 flex-1"><h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-6">Master Code.<br/><span className="text-indigo-600">Charm the Future.</span></h1><div className="prose prose-lg text-slate-600 mb-10 max-w-3xl mx-auto"><p className="font-medium text-lg text-slate-800">My Name is Benjamin and I am The Charming Programmer.</p><p>I guide you from zero to coding your first program.</p></div><div className="flex gap-4 justify-center"><button onClick={()=>setView('register')} className="bg-indigo-600 text-white px-8 py-3 rounded-full text-lg hover:bg-indigo-700">Start Learning</button><button onClick={()=>setView('login')} className="bg-white text-indigo-600 border border-indigo-200 px-8 py-3 rounded-full text-lg hover:bg-slate-50">Manager Login</button></div></div>
-    <Footer />
-  </div>
-);
-
-const LoginScreen = ({ authForm, setAuthForm, handleAuth, setView, error, success }) => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4"><div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg border border-slate-100"><h2 className="text-2xl font-bold mb-2 text-center text-slate-900">{authForm.isLogin ? 'Welcome Back' : 'Join the Class'}</h2>{error && <div className="bg-red-50 text-red-600 p-3 rounded text-sm text-center mb-4">{error}</div>}{success && <div className="bg-green-50 text-green-600 p-3 rounded text-sm text-center mb-4">{success}</div>}<form onSubmit={handleAuth} className="space-y-4 mt-2">{!authForm.isLogin && <input placeholder="Full Name" className="w-full p-3 border rounded-xl" value={authForm.name} onChange={e => setAuthForm({...authForm, name: e.target.value})} required />}<input placeholder="Email Address" type="email" className="w-full p-3 border rounded-xl" value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} required /><input type="password" placeholder="Password" className="w-full p-3 border rounded-xl" value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} required /><button className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">{authForm.isLogin ? 'Sign In' : 'Create Account'}</button></form><div className="mt-4 flex justify-between text-sm text-indigo-600"><button onClick={() => setAuthForm({...authForm, isLogin: !authForm.isLogin})}>{authForm.isLogin ? 'Create Account' : 'Back to Login'}</button><button onClick={() => setView('landing')}>Home</button></div></div></div>
-);
-
-const SubscriptionModal = ({ onClose, user, requestAccess }) => (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div className="bg-white p-6 rounded-2xl w-full max-w-md text-center shadow-2xl">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4"><Smartphone size={32}/></div>
-            <h2 className="text-2xl font-bold mb-2 text-slate-900">Subscribe</h2>
-            <p className="text-slate-600 mb-6">Unlock full access for <strong>K30/month</strong>.</p>
-            
-            <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 text-left mb-6">
-                <p className="font-bold text-sm text-slate-700 uppercase mb-2">Instructions:</p>
-                <ol className="list-decimal pl-4 space-y-2 text-sm text-slate-800 font-medium">
-                    <li>Send <strong>K30</strong> via Mobile Money.</li>
-                    <li><strong>Airtel/MTN:</strong> 096xxxxxxx (Benjamin)</li>
-                    <li>Ref: "Sub {user.name}"</li>
-                    <li>Click the button below.</li>
-                </ol>
-            </div>
-            
-            <button onClick={requestAccess} className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 shadow-md">I Have Paid</button>
-            <button onClick={onClose} className="mt-3 text-slate-400 text-sm hover:text-slate-600">Cancel</button>
-        </div>
-    </div>
-);
-
-const LockedModal = ({ onClose, onPay }) => (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50"><div className="bg-white p-6 rounded-2xl w-full max-w-sm text-center"><div className="w-16 h-16 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center mx-auto mb-4"><Lock size={32}/></div><h2 className="text-xl font-bold mb-2 text-slate-900">Content Locked</h2><p className="text-slate-600 mb-6">This lesson is for Premium Students.</p><button onClick={onPay} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Pay Now (K30)</button><button onClick={onClose} className="mt-3 text-slate-400 text-sm">Close</button></div></div>
-);
-
-const QuizModal = ({ courseId, onClose, onSave }) => {
-    const [title, setTitle] = useState(''); const [questions, setQuestions] = useState([{ text: '', options: ['','','',''], correct: 0 }]);
-    const addQ = () => setQuestions([...questions, { text: '', options: ['','','',''], correct: 0 }]);
-    const updateQ = (i, f, v) => { const n=[...questions]; n[i][f]=v; setQuestions(n); };
-    const updateOpt = (qi, oi, v) => { const n=[...questions]; n[qi].options[oi]=v; setQuestions(n); };
-    const updateCorrect = (i, v) => { const n=[...questions]; n[i].correct=v; setQuestions(n); };
-    return (<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"><div className="bg-white p-6 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"><h3 className="font-bold text-lg mb-4">Create Quiz</h3><input placeholder="Quiz Title" className="w-full p-2 border rounded mb-4" value={title} onChange={e=>setTitle(e.target.value)} />{questions.map((q, i) => (<div key={i} className="mb-4 p-4 bg-slate-50 rounded-xl"><input placeholder={`Question ${i+1}`} className="w-full p-2 border rounded mb-2" value={q.text} onChange={e=>updateQ(i,'text',e.target.value)} /><div className="grid grid-cols-2 gap-2">{q.options.map((o, oi) => <div key={oi} className="flex gap-2"><input type="radio" name={`q${i}`} checked={q.correct===oi} onChange={()=>updateCorrect(i, oi)} /><input placeholder={`Option ${oi+1}`} className="w-full p-1 border rounded" value={o} onChange={e=>updateOpt(i,oi,e.target.value)} /></div>)}</div></div>))}<div className="flex gap-2"><button onClick={addQ} className="px-4 py-2 bg-slate-200 rounded-lg text-sm">+ Question</button><button onClick={()=>onSave({courseId, title, questions})} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm ml-auto">Save</button><button onClick={onClose} className="px-4 py-2 text-red-500 text-sm">Cancel</button></div></div></div>);
-};
-
-const QuizPlayer = ({ quiz }) => {
-    const [submitted, setSubmitted] = useState(false); const [score, setScore] = useState(0); const [answers, setAnswers] = useState({});
-    const submit = () => { let s = 0; quiz.questions.forEach((q, i) => { if(parseInt(answers[i]) === parseInt(q.correct_idx)) s++; }); setScore(s); setSubmitted(true); };
-    return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-white p-8 overflow-y-auto"><div className="max-w-2xl w-full pb-20"><h2 className="text-3xl font-bold mb-6 text-indigo-400">{quiz.title}</h2>{submitted && <div className={`p-4 rounded-xl mb-6 text-center text-2xl font-bold border ${score/quiz.questions.length > 0.5 ? 'bg-green-900/50 border-green-500 text-green-400' : 'bg-red-900/50 border-red-500 text-red-400'}`}>Score: {score} / {quiz.questions.length}</div>}{quiz.questions.map((q, i) => (<div key={i} className="mb-6 bg-slate-800 p-6 rounded-xl border border-slate-700"><p className="font-bold mb-4 text-lg">{i+1}. {q.text}</p><div className="space-y-3">{JSON.parse(q.options).map((opt, oi) => { const isSel = parseInt(answers[i]) === oi; const isCor = parseInt(q.correct_idx) === oi; let cls = "bg-slate-700/50 hover:bg-slate-700"; if(submitted) { if(isCor) cls="bg-green-900/50 border-green-500"; else if(isSel) cls="bg-red-900/50 border-red-500"; } else if(isSel) cls="bg-indigo-900/50 border-indigo-500"; return (<label key={oi} className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition border border-transparent ${cls}`}><input type="radio" name={`q${i}`} disabled={submitted} onChange={()=>setAnswers({...answers, [i]: oi})} className="w-4 h-4 text-indigo-500" /><span>{opt}</span></label>) })}</div></div>))}{!submitted && <button onClick={submit} className="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl font-bold text-lg transition">Submit Quiz</button>}</div></div>
-    );
+const getYouTubeID = (url) => {
+    if(!url) return null;
+    try { 
+      const r = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/; 
+      const m = url.match(r); 
+      return (m && m[2].length === 11) ? m[2] : null; 
+    } catch(e) { return null; }
 };
 
 const CloudIDE = () => {
-  const [code, setCode] = useState('// C++ Playground\n#include <iostream>\n\nint main() {\n    int x;\n    std::cin >> x;\n    std::cout << "You entered: " << x;\n    return 0;\n}');
-  const [input, setInput] = useState(""); const [output, setOutput] = useState("Output here..."); const [lang, setLang] = useState('cpp'); const [loading, setLoading] = useState(false);
-  const runCode = async () => { setLoading(true); setOutput("Compiling..."); try { const res = await axios.post(`${API}/compile`, { language: lang, code, input }); setOutput(res.data.output); } catch(e) { setOutput("Error."); } setLoading(false); };
-  return (<div className="h-full flex flex-col bg-[#1e1e1e]"><div className="h-[70%]"><Editor height="100%" defaultLanguage="cpp" language={lang} theme="vs-dark" value={code} onChange={setCode} options={{minimap:{enabled:false}, fontSize: 14}} /></div><div className="h-[30%] border-t border-slate-700 bg-black flex flex-col"><div className="bg-[#2d2d2d] text-slate-300 p-2 text-xs flex justify-between items-center"><div className="flex gap-2"><select className="bg-slate-700 text-white border-none rounded px-2" value={lang} onChange={e=>setLang(e.target.value)}><option value="cpp">C++</option><option value="java">Java</option></select><span className="text-slate-500">Stdin:</span><input className="bg-slate-600 text-white rounded px-2 w-32" value={input} onChange={e=>setInput(e.target.value)} placeholder="Type input here..." /></div><button onClick={runCode} disabled={loading} className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50">{loading ? '...' : 'Run'}</button></div><div className="flex-1 p-4 font-mono text-sm text-green-400 overflow-auto whitespace-pre-wrap">{output}</div><div className="bg-indigo-900 text-white text-xs px-2 py-1 flex justify-between"><span>Status: Ready</span><span>CBU Compiler v1.0</span></div></div></div>);
+    const [code, setCode] = useState('public class Main {\n  public static void main(String[] args) {\n    System.out.println("Charming platform$ Ready.");\n  }\n}');
+    const [lang, setLang] = useState('java');
+    const [input, setInput] = useState('');
+    const [output, setOutput] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const run = async () => {
+        setLoading(true); setOutput('Compiling...');
+        try {
+            const res = await axios.post(`${API}/compile`, { language: lang, code, input });
+            setOutput(res.data.output);
+        } catch (e) { setOutput('Error connecting to compiler.'); }
+        finally { setLoading(false); }
+    };
+
+    return (
+        <div className="h-full flex flex-col bg-[#1e1e1e] overflow-hidden">
+            <div className="p-2 bg-[#2d2d2d] flex justify-between items-center border-b border-black shrink-0">
+                <select 
+                  className="bg-slate-700 text-white px-2 py-1 rounded text-xs" 
+                  value={lang} 
+                  onChange={e=>setLang(e.target.value)}
+                >
+                    <option value="cpp">C++</option>
+                    <option value="java">Java</option>
+                </select>
+                <button 
+                  onClick={run} 
+                  disabled={loading} 
+                  className="bg-green-600 text-white px-6 py-1 rounded text-xs font-bold active:scale-95 transition-all"
+                >
+                  {loading ? '...' : 'RUN'}
+                </button>
+            </div>
+            <div className="flex-1 min-h-0">
+                <Editor 
+                  height="100%" 
+                  theme="vs-dark" 
+                  language={lang} 
+                  value={code} 
+                  onChange={setCode} 
+                  options={{fontSize:14, minimap:{enabled:false}, automaticLayout: true}} 
+                />
+            </div>
+            <div className="h-1/3 bg-black flex flex-col md:flex-row border-t border-slate-800 shrink-0">
+                <textarea 
+                  className="flex-1 bg-black text-slate-400 p-3 text-xs font-mono outline-none resize-none border-r border-slate-800" 
+                  placeholder="Standard Input..." 
+                  value={input} 
+                  onChange={e=>setInput(e.target.value)} 
+                />
+                <div className="flex-1 bg-black text-green-500 p-3 text-xs font-mono overflow-auto">
+                    <span className="text-indigo-400">Charming platform$ </span>
+                    <pre className="inline">{output}</pre>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const Classroom = ({ courseId, onExit, user }) => {
-  const [course, setCourse] = useState(null); const [activeTab, setActiveTab] = useState('video'); const [activeItem, setActiveItem] = useState(null); const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [file, setFile] = useState(null); const [uploading, setUploading] = useState(false); const [progress, setProgress] = useState(0); const [quizModal, setQuizModal] = useState(false);
-  const [showPay, setShowPay] = useState(false); const [showLock, setShowLock] = useState(false);
+    const [course, setCourse] = useState(null);
+    const [activeItem, setActiveItem] = useState(null);
+    const [tab, setTab] = useState('video');
+    const [sidebar, setSidebar] = useState(true);
+    const [progress, setProgress] = useState(0);
 
-  useEffect(() => { loadCourse(); }, [courseId]);
-  const loadCourse = () => axios.get(`${API}/courses/${courseId}`).then(res => { setCourse(res.data); const vids = res.data.videos || []; if(vids.length > 0 && !activeItem) setActiveItem(vids[0]); }).catch(err => { alert("Error loading."); onExit(); });
-  const updateProgress = async (vidId, pct) => { await axios.post(`${API}/progress`, { videoId: vidId, percent: Math.round(pct) }); setCourse(prev => ({ ...prev, progressMap: { ...prev.progressMap, [vidId]: Math.round(pct) } })); };
-  const uploadVideo = async () => { if (!file) return; setUploading(true); const fd = new FormData(); fd.append('file', file); fd.append('courseId', course.id); fd.append('title', file.name); await axios.post(`${API}/upload`, fd, { onUploadProgress: p => setProgress(Math.round((p.loaded*100)/p.total)) }); setFile(null); setUploading(false); setProgress(0); loadCourse(); };
-  const addLink = async () => { const url=prompt("Link:"); if(url) { await axios.post(`${API}/videos/link`, {courseId: course.id, title: 'Video Lesson', url}); loadCourse(); }};
-  const startLive = async () => { const res = await axios.post(`${API}/sessions`, {courseId: course.id, title: 'Live Class'}); window.open(res.data.joinUrl, '_blank'); loadCourse(); };
-  const addQuiz = async (qData) => { await axios.post(`${API}/quizzes`, { ...qData, courseId: course.id }); setQuizModal(false); loadCourse(); };
-  const deleteItem = async (type, id) => { if(confirm("Delete item?")) { await axios.delete(`${API}/${type}/${id}`); loadCourse(); }};
-  const reorder = async (vidId, dir) => { await axios.put(`${API}/videos/reorder`, { videoId: vidId, direction: dir }); loadCourse(); };
-  const renameVideo = async (id, oldTitle) => { const t=prompt("New Title:", oldTitle); if(t) { await axios.put(`${API}/videos/${id}`, {title:t}); loadCourse(); }};
-  
-  const requestAccess = async () => { await axios.post(`${API}/subscribe`); alert("Request Sent!"); setShowPay(false); setShowLock(false); };
+    const load = () => axios.get(`${API}/courses/${courseId}`).then(res => { 
+      setCourse(res.data); 
+      if(!activeItem) setActiveItem(res.data.videos?.[0]); 
+    });
 
-  if(!course) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  const videos = course.videos || []; const sessions = course.sessions || []; const quizzes = course.quizzes || []; const progMap = course.progressMap || {};
-  const isSubscriber = user.role === 'manager' || user.subscription_status === 'active' || course.isSubscriber;
+    useEffect(() => { load(); }, [courseId]);
 
-  return (
-    <div className="h-screen flex flex-col bg-black text-white overflow-hidden"><div className="bg-slate-900 border-b border-slate-800 p-3 flex items-center justify-between"><div className="flex items-center gap-4"><button onClick={onExit} className="text-slate-400 hover:text-white"><ArrowLeft /></button><h1 className="font-bold truncate max-w-xs md:max-w-md">{course.title}</h1></div><div className="flex gap-2 text-sm"><button onClick={()=>{setActiveTab('video');setSidebarOpen(true)}} className={`px-3 py-1 rounded ${activeTab==='video'?'bg-indigo-600':'hover:bg-slate-800'}`}>Learn</button><button onClick={()=>{setActiveTab('ide');setSidebarOpen(false)}} className={`px-3 py-1 rounded ${activeTab==='ide'?'bg-indigo-600':'hover:bg-slate-800'}`}>IDE</button><button onClick={()=>setSidebarOpen(!sidebarOpen)} className="px-3 py-1 bg-slate-800 rounded flex items-center gap-2">{sidebarOpen ? <ChevronRight size={16}/> : <Menu size={16}/>} {sidebarOpen ? 'Hide' : 'Menu'}</button></div></div><div className="flex-1 flex overflow-hidden"><div className={`flex-1 relative transition-all duration-300 ${sidebarOpen && activeTab !== 'ide' ? 'mr-80' : 'mr-0'}`}>{activeTab === 'ide' ? <CloudIDE /> : activeTab === 'quiz' && activeItem ? <QuizPlayer quiz={activeItem} /> : activeTab === 'live' && activeItem ? <iframe src={activeItem.joinUrl} className="w-full h-full border-0" allow="camera; microphone; display-capture" /> : <div className="w-full h-full flex items-center justify-center bg-black">{activeItem?.filename === 'YouTube' ? <iframe className="w-full h-full" src={`.path)}?autoplay=1`} allowFullScreen /> : activeItem ? <video src={activeItem.path} controls className="max-h-full max-w-full" onTimeUpdate={(e) => { if(e.target.currentTime > 0 && !e.target.paused) { const pct = (e.target.currentTime / e.target.duration) * 100; if (pct > (progMap[activeItem.id] || 0)) updateProgress(activeItem.id, pct); } }} onEnded={() => updateProgress(activeItem.id, 100)} /> : <div className="text-slate-500">Select a lesson from the sidebar</div>}</div>}</div><div className={`fixed right-0 top-12 bottom-0 w-80 bg-slate-900 border-l border-slate-800 overflow-y-auto z-20 transition-transform duration-300 ${sidebarOpen && activeTab !== 'ide' ? 'translate-x-0' : 'translate-x-full'}`}>{user.role === 'manager' && (<div className="p-4 bg-indigo-900/30 border-b border-indigo-900/50 space-y-2"><div className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Manager Tools</div><div className="flex gap-2"><button onClick={addLink} className="flex-1 bg-slate-800 hover:bg-slate-700 py-2 rounded text-xs flex items-center justify-center gap-1"><LinkIcon size={14}/> Link</button><button onClick={startLive} className="flex-1 bg-red-900/50 hover:bg-red-900 py-2 rounded text-xs flex items-center justify-center gap-1 text-red-200"><Video size={14}/> Live</button></div><div className="flex gap-2 items-center"><label className="flex-1 cursor-pointer bg-slate-800 hover:bg-slate-700 py-2 rounded text-xs flex items-center justify-center gap-1"><Upload size={14}/> Upload <input type="file" hidden onChange={e=>{setFile(e.target.files[0]); uploadVideo()}} /></label><button onClick={()=>setQuizModal(true)} className="flex-1 bg-purple-900/50 hover:bg-purple-900 py-2 rounded text-xs flex items-center justify-center gap-1 text-purple-200"><Brain size={14}/> +Quiz</button></div>{uploading && <div className="w-full bg-slate-800 h-1 mt-1 rounded"><div className="bg-green-500 h-1" style={{width: `${progress}%`}}></div></div>}</div>)}{sessions.length > 0 && <div><div className="px-4 py-2 text-xs font-bold text-slate-500 mt-2">LIVE</div>{sessions.map(s=>(<div key={s.id} onClick={()=>{setActiveItem(s);setActiveTab('live')}} className="px-4 py-3 hover:bg-slate-800 cursor-pointer border-l-2 border-red-500 flex items-center justify-between group"><div className="flex items-center gap-2"><Video size={16} className="text-red-500"/><span className="text-sm">{s.title}</span></div>{user.role==='manager' && <button onClick={(e)=>{e.stopPropagation();deleteItem('sessions',s.id)}} className="text-slate-600 hover:text-red-500"><Trash2 size={12}/></button>}</div>))}</div>}<div><div className="px-4 py-2 text-xs font-bold text-slate-500 mt-2">LESSONS</div>{videos.map((v, idx)=>{ const pct = progMap[v.id] || 0; const isLocked = idx >= 2 && !isSubscriber; return (<div key={v.id} onClick={()=>{if(!isLocked){setActiveItem(v);setActiveTab('video')} else setShowLock(true)}} className={`px-4 py-3 cursor-pointer flex items-center justify-between group ${activeItem?.id===v.id?'bg-slate-800':''} ${isLocked?'opacity-50':''}`}><div className="flex items-center gap-3">{isLocked ? <Lock size={16} className="text-slate-500"/> : (pct >= 100 ? <CheckCircle size={16} className="text-green-500"/> : (v.filename==='YouTube'?<Youtube size={16} className="text-red-400"/>:<Play size={16} className="text-indigo-400"/>))}<div className="flex flex-col"><span className="text-sm">{v.title}</span><div className="w-20 bg-slate-700 h-1 rounded mt-1"><div className="bg-green-500 h-1 rounded" style={{width: `${pct}%`}}></div></div></div></div>{user.role==='manager' && <div className="flex gap-1"><button onClick={(e)=>{e.stopPropagation();renameVideo(v.id,v.title)}} className="text-slate-500 hover:text-white"><Edit size={12}/></button><button onClick={(e)=>{e.stopPropagation();reorder(v.id,'up')}} className="text-slate-500 hover:text-white"><ArrowUp size={12}/></button><button onClick={(e)=>{e.stopPropagation();reorder(v.id,'down')}} className="text-slate-500 hover:text-white"><ArrowDown size={12}/></button><button onClick={(e)=>{e.stopPropagation();deleteItem('videos',v.id)}} className="text-slate-600 hover:text-red-500"><Trash2 size={12}/></button></div>}</div>)})}</div>{quizzes.length > 0 && <div><div className="px-4 py-2 text-xs font-bold text-slate-500 mt-2">QUIZZES</div>{quizzes.map(q=>(<div key={q.id} onClick={()=>{setActiveItem(q);setActiveTab('quiz')}} className={`px-4 py-3 cursor-pointer flex items-center justify-between group ${activeItem?.id===q.id?'bg-slate-800':''}`}><div className="flex items-center gap-3"><Brain size={16} className="text-purple-400"/><span className="text-sm">{q.title}</span></div>{user.role==='manager' && <button onClick={(e)=>{e.stopPropagation();deleteItem('quizzes',q.id)}} className="text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={12}/></button>}</div>))}</div>}</div></div>{showPay && <SubscriptionModal user={user} onClose={()=>setShowPay(false)} requestAccess={requestAccess} />}{showLock && <LockedModal onClose={()=>setShowLock(false)} onPay={()=>{setShowLock(false); setShowPay(true)}} />}{quizModal && <QuizModal courseId={course.id} onClose={()=>setQuizModal(false)} onSave={addQuiz} />}</div>
-  );
+    const addLink = async () => {
+        const title = prompt("Lesson Title:");
+        const url = prompt("YouTube URL:");
+        if(title && url) { 
+          await axios.post(`${API}/videos/link`, { courseId, title, url }); 
+          load(); 
+        }
+    };
+
+    const uploadVideo = async (file) => {
+        if(!file) return;
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('courseId', courseId);
+        fd.append('title', file.name);
+        setProgress(1);
+        await axios.post(`${API}/upload`, fd, {
+            onUploadProgress: (p) => setProgress(Math.round((p.loaded * 100) / p.total))
+        });
+        setTimeout(() => setProgress(0), 1000);
+        load();
+    };
+
+    const reorder = async (videoId, direction) => { 
+      await axios.put(`${API}/videos/reorder`, { videoId, direction }); 
+      load(); 
+    };
+
+    const rename = async (id, old) => { 
+      const t = prompt("Rename to:", old); 
+      if(t) { await axios.put(`${API}/videos/${id}`, {title:t}); load(); }
+    };
+
+    const del = async (id) => { 
+      if(confirm("Delete lesson?")) { await axios.delete(`${API}/videos/${id}`); load(); } 
+    };
+
+    if(!course) return null;
+    const isSub = user.role === 'manager' || user.subscription_status === 'active';
+
+    return (
+        <div className="h-screen flex flex-col bg-black text-white overflow-hidden">
+            <div className="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center z-50 shrink-0">
+                <div className="flex items-center gap-4">
+                  <button onClick={onExit}><ArrowLeft/></button>
+                  <span className="font-bold text-xs truncate max-w-[120px]">{course.title}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button 
+                      onClick={()=>setTab('video')} 
+                      className={`px-4 py-1 rounded-full text-[10px] font-bold ${tab==='video'?'bg-indigo-600':'text-slate-500'}`}
+                    >
+                      LEARN
+                    </button>
+                    <button 
+                      onClick={()=>setTab('ide')} 
+                      className={`px-4 py-1 rounded-full text-[10px] font-bold ${tab==='ide'?'bg-indigo-600':'text-slate-500'}`}
+                    >
+                      IDE
+                    </button>
+                    <button onClick={()=>setSidebar(!sidebar)} className="ml-2">
+                      {sidebar ? <ChevronRight/> : <Menu/>}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-1 flex overflow-hidden relative">
+                <div className="flex-1 bg-black">
+                    {tab === 'ide' ? <CloudIDE /> : 
+                     activeItem?.filename === 'YouTube' ? <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${getYouTubeID(activeItem.path)}`} allowFullScreen /> :
+                     <video src={activeItem?.path} className="w-full h-full object-contain" controls />}
+                </div>
+
+                <div className={`fixed inset-y-0 right-0 w-80 bg-slate-900 border-l border-slate-800 flex flex-col transition-transform duration-300 z-40 ${sidebar ? 'translate-x-0' : 'translate-x-full'}`}>
+                    {user.role === 'manager' && (
+                        <div className="p-4 bg-indigo-950/40 border-b border-indigo-900 shrink-0">
+                            <div className="text-[10px] font-bold text-indigo-400 mb-2 uppercase tracking-widest">Manager Tools</div>
+                            <div className="flex gap-2">
+                                <button onClick={addLink} className="flex-1 bg-indigo-600 text-white py-2 rounded text-[10px] font-bold">ADD LINK</button>
+                                <label className="flex-1 bg-slate-800 py-2 rounded text-[10px] font-bold text-center cursor-pointer">
+                                    UPLOAD <input type="file" hidden onChange={(e)=>uploadVideo(e.target.files[0])}/>
+                                </label>
+                            </div>
+                            {progress > 0 && (
+                                <div className="mt-3 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-green-500 h-full transition-all" style={{width: `${progress}%`}}></div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800/50">Content</div>
+                        {course.videos?.map((v, i) => (
+                            <div key={v.id} onClick={() => { if(!isSub && i > 0) alert("Premium Required"); else setActiveItem(v); }} className={`p-4 border-b border-slate-800/50 group cursor-pointer ${activeItem?.id === v.id ? 'bg-indigo-900/10' : ''}`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        {(!isSub && i > 0) ? <Lock size={14} className="text-slate-600"/> : <Play size={14} className="text-indigo-400"/>}
+                                        <span className={`text-xs ${activeItem?.id === v.id ? 'text-white font-bold' : 'text-slate-400'}`}>{v.title}</span>
+                                    </div>
+                                    {user.role === 'manager' && (
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={(e)=>{e.stopPropagation(); reorder(v.id, 'up')}}><ArrowUp size={12}/></button>
+                                            <button onClick={(e)=>{e.stopPropagation(); reorder(v.id, 'down')}}><ArrowDown size={12}/></button>
+                                            <button onClick={(e)=>{e.stopPropagation(); rename(v.id, v.title)}}><Edit size={12}/></button>
+                                            <button onClick={(e)=>{e.stopPropagation(); del(v.id)}} className="text-red-500"><Trash2 size={12}/></button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 };
 
-const Dashboard = ({ user, logout }) => {
-  const [courses, setCourses] = useState([]); const [activeCourseId, setActiveCourseId] = useState(null); const [stats, setStats] = useState(null); const [showCreate, setShowCreate] = useState(false); const [newCourse, setNewCourse] = useState({title:'', description:''}); const [showSub, setShowSub] = useState(false); const [users, setUsers] = useState([]); const [activeTab, setActiveTab] = useState('courses');
-  
-  // REFRESH DATA LOGIC
-  const loadData = () => {
-      axios.get(`${API}/courses`).then(res => setCourses(res.data));
-      if(user.role==='manager') {
-          axios.get(`${API}/stats`).then(res => setStats(res.data));
-          axios.get(`${API}/users`).then(res => setUsers(res.data));
-      }
-  };
-  
-  useEffect(() => { loadData(); }, [activeTab]); // RE-RUN WHEN TAB CHANGES
+const AdminPanel = ({ onExit }) => {
+    const [users, setUsers] = useState([]);
+    useEffect(() => { axios.get(`${API}/users`).then(res => setUsers(res.data)); }, []);
+    const act = (id, cur) => axios.post(`${API}/users/${id}/${cur==='active'?'revoke':'approve'}`).then(()=>axios.get(`${API}/users`).then(res => setUsers(res.data)));
+    return (
+        <div className="min-h-screen bg-slate-100 p-8 flex flex-col items-center">
+            <div className="max-w-4xl w-full bg-white rounded-[2.5rem] p-8 shadow-sm">
+                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-bold">Students</h2><button onClick={onExit}><X/></button></div>
+                <div className="space-y-4">{users.map(u => (
+                  <div key={u.id} className="p-4 border rounded-2xl flex justify-between items-center">
+                    <div><p className="font-bold text-sm">{u.name}</p><p className="text-xs text-slate-400">{u.email}</p></div>
+                    <button onClick={()=>act(u.id, u.subscription_status)} className={`px-4 py-1 rounded-lg text-xs font-bold ${u.subscription_status==='active'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>
+                      {u.subscription_status==='active'?'REVOKE':'APPROVE'}
+                    </button>
+                  </div>
+                ))}</div>
+            </div>
+        </div>
+    );
+};
 
-  const createCourse = async () => { if(newCourse.title) { await axios.post(`${API}/courses`, newCourse); loadData(); setShowCreate(false); } };
-  const deleteCourse = async (id) => { if(confirm("Delete entire course?")) { await axios.delete(`${API}/courses/${id}`); loadData(); }};
-  const editCourse = async (id, title, desc) => { await axios.put(`${API}/courses/${id}`, {title, description:desc}); loadData(); };
-  const toggleSub = async (uid, current) => { const action = current==='active' ? 'revoke' : 'approve'; await axios.post(`${API}/users/${uid}/${action}`); loadData(); };
-  const requestAccess = async () => { await axios.post(`${API}/subscribe`); alert("Request Sent!"); setShowSub(false); };
-  
-  if (activeCourseId) return <Classroom courseId={activeCourseId} onExit={()=>{setActiveCourseId(null); loadData();}} user={user} />;
+const Dashboard = ({ user, logout, onJoinCourse, setView }) => {
+    const [courses, setCourses] = useState([]);
+    const load = () => axios.get(`${API}/courses`).then(res => setCourses(res.data));
+    useEffect(() => { load(); }, []);
+    const del = async (id) => { if(confirm("Delete entire course?")) { await axios.delete(`${API}/courses/${id}`); load(); } };
+    const ren = async (id, old) => { 
+      const t = prompt("Rename course to:", old); 
+      if(t) { await axios.put(`${API}/courses/${id}`, {title:t}); load(); }
+    };
 
-  return (
-    <div className="min-h-screen bg-slate-50"><nav className="bg-white px-6 py-4 shadow-sm flex justify-between items-center"><div className="font-bold text-xl text-indigo-700 flex items-center gap-2"><Brain/> The Charming Programmer</div><div className="flex gap-4 items-center"><span className="text-sm text-slate-500">{user.name}</span><button onClick={logout}><LogOut size={20} className="text-slate-400 hover:text-red-500"/></button></div></nav><div className="max-w-7xl mx-auto p-6">{user.role === 'manager' && (<><div className="flex gap-4 mb-8"><div className="bg-white p-4 rounded-xl shadow-sm flex-1 border-l-4 border-indigo-500"><div className="text-xs text-slate-500 uppercase font-bold">Total Students</div><div className="text-2xl font-bold">{stats?.students || 0}</div></div><div className="bg-white p-4 rounded-xl shadow-sm flex-1 border-l-4 border-green-500"><div className="text-xs text-slate-500 uppercase font-bold">Active Courses</div><div className="text-2xl font-bold">{stats?.courses || 0}</div></div><button onClick={()=>setActiveTab('students')} className={`flex-1 p-4 rounded-xl shadow-sm text-left transition ${activeTab==='students'?'bg-slate-800 text-white':'bg-white hover:bg-slate-50'}`}><div className="text-xs uppercase font-bold mb-1">Manage Students</div><div className="text-lg font-bold flex items-center gap-2"><Users/> View List</div></button><button onClick={()=>setActiveTab('courses')} className={`flex-1 p-4 rounded-xl shadow-sm text-left transition ${activeTab==='courses'?'bg-slate-800 text-white':'bg-white hover:bg-slate-50'}`}><div className="text-xs uppercase font-bold mb-1">Manage Courses</div><div className="text-lg font-bold flex items-center gap-2"><BookOpen/> View Grid</div></button></div>{activeTab === 'students' && (<div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div className="p-6 border-b border-slate-100 font-bold text-lg flex justify-between items-center"><span>Student Roster</span><button onClick={loadData}><RefreshCw size={16}/></button></div><table className="w-full text-sm text-left"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-4">Name</th><th className="p-4">Email</th><th className="p-4">Status</th><th className="p-4">Action</th></tr></thead><tbody>{users.map(u=>(<tr key={u.id} className="border-b border-slate-50"><td className="p-4 font-medium">{u.name}</td><td className="p-4 text-slate-500">{u.email}</td><td className="p-4"><span className={`px-2 py-1 rounded text-xs ${u.subscription_status==='active'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}`}>{u.subscription_status}</span></td><td className="p-4"><button onClick={()=>toggleSub(u.id, u.subscription_status)} className="text-indigo-600 hover:underline">{u.subscription_status==='active'?'Revoke':'Approve'}</button></td></tr>))}</tbody></table></div>)}</>)}{(activeTab === 'courses' || user.role !== 'manager') && (<><div className="flex justify-between items-center mb-8 mt-8"><h2 className="text-2xl font-bold text-slate-800">Available Courses</h2>{user.role === 'manager' ? <button onClick={()=>setShowCreate(true)} className="bg-indigo-600 text-white px-4 py-2 rounded"><Plus size={18}/> New</button> : <button onClick={()=>setShowSub(true)} className="bg-green-600 text-white px-4 py-2 rounded flex gap-2"><DollarSign size={18}/> Subscribe</button>}</div>{showCreate && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-white p-6 rounded-xl w-96"><h3 className="font-bold mb-4">Create Course</h3><input placeholder="Title" className="w-full mb-3 p-2 border rounded" onChange={e=>setNewCourse({...newCourse, title:e.target.value})} /><textarea placeholder="Description" className="w-full mb-4 p-2 border rounded" onChange={e=>setNewCourse({...newCourse, description:e.target.value})} /><div className="flex justify-end gap-2"><button onClick={()=>setShowCreate(false)} className="px-4 py-2 text-slate-500">Cancel</button><button onClick={createCourse} className="px-4 py-2 bg-indigo-600 text-white rounded">Create</button></div></div></div>}<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">{courses.map(c => (<div key={c.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition cursor-pointer" onClick={()=>setActiveCourseId(c.id)}><div className="p-6 flex-1"><div className="flex justify-between items-start"><h3 className="font-bold text-xl text-slate-900 mb-2">{c.title}</h3>{user.role === 'manager' && <button onClick={(e)=>{e.stopPropagation(); const t=prompt("New Title", c.title); const d=prompt("New Desc", c.description); if(t) editCourse(c.id, t, d);}} className="text-slate-400 hover:text-indigo-600"><Edit size={16}/></button>}</div><p className="text-sm text-slate-500 line-clamp-3">{c.description}</p><div className="mt-4 flex items-center gap-2 text-xs text-slate-400"><span>{c.videoCount || 0} Lessons</span> • <span>{c.progress}% Complete</span></div><div className="w-full bg-slate-100 h-1 mt-2 rounded-full overflow-hidden"><div className="bg-green-500 h-full" style={{width: `${c.progress}%`}}></div></div></div>{user.role === 'manager' && <button onClick={(e)=>{e.stopPropagation();deleteCourse(c.id)}} className="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={16}/></button>}</div>))}</div></>)}</div>{showSub && <SubscriptionModal user={user} onClose={()=>setShowSub(false)} requestAccess={requestAccess} />}</div>
-  );
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col">
+            <nav className="p-4 bg-white border-b flex justify-between items-center sticky top-0 z-10 shrink-0">
+              <div className="font-bold text-indigo-600 flex items-center gap-2"><Brain size={20}/> Spectre</div>
+              <div className="flex gap-4 items-center">
+                {user?.role==='manager' && <button onClick={()=>setView('admin')} className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full">ADMIN</button>}
+                <button onClick={logout}><LogOut size={20} className="text-slate-400"/></button>
+              </div>
+            </nav>
+            <div className="p-8 max-w-6xl mx-auto flex-1 w-full">
+              <h2 className="text-3xl font-bold mb-8 text-slate-900 tracking-tight">Platforms</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {courses.map(c=>(
+                    <div key={c.id} onClick={()=>onJoinCourse(c.id)} className="group relative bg-white border border-slate-200 p-8 rounded-[2.5rem] cursor-pointer hover:shadow-xl transition-all">
+                      <MonitorPlay className="text-indigo-600 mb-4" size={32}/><h3 className="font-bold text-lg">{c.title}</h3>
+                      {user.role==='manager' && (
+                        <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100">
+                          <button onClick={(e)=>{e.stopPropagation(); ren(c.id, c.title)}}><Edit size={16} className="text-slate-300 hover:text-indigo-600"/></button>
+                          <button onClick={(e)=>{e.stopPropagation(); del(c.id)}}><Trash2 size={16} className="text-slate-300 hover:text-red-500"/></button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {user?.role==='manager' && (
+                    <div className="border-2 border-dashed border-slate-200 rounded-[2.5rem] flex items-center justify-center h-48 text-slate-300 hover:text-indigo-600 hover:border-indigo-600 transition cursor-pointer" onClick={()=>{const t=prompt("Title:"); if(t) axios.post(`${API}/courses`, {title:t}).then(()=>load())}}><Plus size={40}/></div>
+                  )}
+              </div>
+            </div>
+            <div className="p-4 text-center text-[10px] text-slate-400 border-t bg-white uppercase tracking-widest">© 2025 Benjamin Chaambwa | Spectre v7.6</div>
+        </div>
+    );
 };
 
 export default function App() {
-  const [view, setView] = useState('landing');
-  const [user, setUser] = useState(null);
-  const [authForm, setAuthForm] = useState({ email: '', password: '', name: '', phone: '', isLogin: true });
-  useEffect(() => { const u = localStorage.getItem('user'); const t = localStorage.getItem('token'); if (u && t) { setUser(JSON.parse(u)); axios.defaults.headers.common['Authorization'] = `Bearer ${t}`; setView('dashboard'); } }, []);
-  const handleAuth = async (e) => { e.preventDefault(); try { const endpoint = authForm.isLogin ? '/auth/login' : '/auth/register'; const res = await axios.post(`${API}${endpoint}`, authForm); if (res.data.token) { localStorage.setItem('token', res.data.token); localStorage.setItem('user', JSON.stringify(res.data.user)); axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`; setUser(res.data.user); setView('dashboard'); } else { alert('Account created! Please log in.'); setAuthForm(prev => ({ ...prev, isLogin: true, password: '' })); } } catch (err) { alert(err.response?.data?.error || 'Auth failed'); } };
-  const logout = () => { localStorage.clear(); setUser(null); setView('landing'); };
-  if (view === 'landing') return <LandingPage setView={(v) => { setView('login'); setAuthForm(prev => ({ ...prev, isLogin: v === 'login', error: '' })) }} />;
-  if (view === 'login' || view === 'register') return <LoginScreen authForm={authForm} setAuthForm={setAuthForm} handleAuth={handleAuth} setView={setView} />;
-  return <Dashboard user={user} logout={logout} />;
+    const [view, setView] = useState('landing');
+    const [user, setUser] = useState(null);
+    const [activeId, setActiveId] = useState(null);
+    const [auth, setAuth] = useState({ email: '', password: '', name: '', isLogin: true });
+
+    useEffect(() => {
+        const t = localStorage.getItem('token');
+        if (t) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${t}`;
+            axios.get(`${API}/auth/me`).then(res => { setUser(res.data); setView('dashboard'); }).catch(()=>{localStorage.clear()});
+        }
+    }, []);
+
+    const handleAuth = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await axios.post(`${API}/auth/${auth.isLogin?'login':'register'}`, auth);
+            localStorage.setItem('token', res.data.token);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
+            setUser(res.data.user); setView('dashboard');
+        } catch (err) { alert("Invalid Credentials"); }
+    };
+
+    if (view === 'admin') return <AdminPanel onExit={()=>setView('dashboard')} />;
+    if (view === 'classroom') return <Classroom courseId={activeId} user={user} onExit={()=>setView('dashboard')} />;
+    if (view === 'dashboard') return <Dashboard user={user} logout={()=>{localStorage.clear(); setView('landing')}} setView={setView} onJoinCourse={(id)=>{setActiveId(id); setView('classroom')}} />;
+    
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+            {view === 'landing' ? (
+              <div className="text-center p-6">
+                <Brain className="text-indigo-600 mb-4 mx-auto animate-pulse" size={80}/>
+                <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tighter">The Charming Programmer</h1>
+                <button onClick={()=>setView('login')} className="bg-indigo-600 text-white px-12 py-4 rounded-full font-bold shadow-2xl hover:scale-105 transition-all text-lg tracking-widest mt-6">ENTER</button>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-6">
+                <form onSubmit={handleAuth} className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm border border-slate-100">
+                    <h2 className="text-3xl font-bold mb-8 text-center tracking-tight">{auth.isLogin?'Login':'Join'}</h2>
+                    {!auth.isLogin && (
+                      <input className="w-full p-4 bg-slate-50 border-none rounded-2xl mb-3 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Full Name" onChange={e=>setAuth({...auth, name:e.target.value})}/>
+                    )}
+                    <input className="w-full p-4 bg-slate-50 border-none rounded-2xl mb-3 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Email" onChange={e=>setAuth({...auth, email:e.target.value})}/>
+                    <input className="w-full p-4 bg-slate-50 border-none rounded-2xl mb-8 outline-none focus:ring-2 focus:ring-indigo-500" type="password" placeholder="Password" onChange={e=>setAuth({...auth, password:e.target.value})}/>
+                    <button className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-700 transition-all">CONTINUE</button>
+                    <p className="mt-6 text-center text-xs text-indigo-600 cursor-pointer font-bold" onClick={()=>setAuth({...auth, isLogin:!auth.isLogin})}>
+                      {auth.isLogin ? 'Switch to Register' : 'Switch to Login'}
+                    </p>
+                </form>
+              </div>
+            )}
+        </div>
+    );
 }
