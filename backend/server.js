@@ -37,50 +37,39 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ token, user });
 });
 app.get('/api/auth/me', authenticate, (req, res) => res.json(req.user));
-app.put('/api/auth/update', authenticate, (req, res) => {
-    db.prepare('UPDATE users SET name = ?, phone = ? WHERE id = ?').run(req.body.name, req.body.phone, req.user.id);
-    res.json({ success: true });
+
+// --- MANAGER: USER ROSTER ---
+app.get('/api/users', authenticate, (req, res) => {
+    if(req.user.role !== 'manager') return res.status(403).send();
+    res.json(db.prepare("SELECT id, name, email, subscription_status, phone FROM users WHERE role = 'student'").all());
 });
 
-// --- CONTENT MANAGEMENT ---
-app.get('/api/courses', (req, res) => {
+// --- MANAGER: CONTENT MGMT ---
+app.get('/api/courses', authenticate, (req, res) => {
     res.json(db.prepare('SELECT * FROM courses').all().map(c => ({...c, videoCount: db.prepare('SELECT COUNT(*) as cnt FROM videos WHERE course_id = ?').get(c.id).cnt})));
 });
+
 app.get('/api/courses/:id', authenticate, (req, res) => {
     const c = db.prepare('SELECT * FROM courses WHERE id = ?').get(req.params.id);
     if(c) c.videos = db.prepare('SELECT * FROM videos WHERE course_id = ? ORDER BY order_idx ASC').all(req.params.id);
     res.json(c);
 });
-app.post('/api/courses', authenticate, (req, res) => {
-    if(req.user.role !== 'manager') return res.status(403).send();
-    db.prepare('INSERT INTO courses (id, title, description) VALUES (?, ?, ?)').run(nanoid(), req.body.title, '');
-    res.json({ success: true });
-});
+
 app.put('/api/courses/:id', authenticate, (req, res) => {
     if(req.user.role !== 'manager') return res.status(403).send();
-    const { title, description, default_lang, ide_enabled } = req.body;
-    db.prepare('UPDATE courses SET title = ?, description = ?, default_lang = ?, ide_enabled = ? WHERE id = ?')
-      .run(title, description, default_lang || 'cpp', ide_enabled ? 1 : 0, req.params.id);
+    const { title, description, default_lang, ide_enabled, starter_code } = req.body;
+    db.prepare('UPDATE courses SET title = ?, description = ?, default_lang = ?, ide_enabled = ?, starter_code = ? WHERE id = ?')
+      .run(title, description, default_lang, ide_enabled ? 1 : 0, starter_code, req.params.id);
     res.json({ success: true });
 });
 
-const upload = multer({ storage: multer.diskStorage({ destination: 'uploads/', filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`) }) });
-app.post('/api/upload', authenticate, upload.single('file'), (req, res) => {
-    const max = db.prepare('SELECT MAX(order_idx) as m FROM videos WHERE course_id = ?').get(req.body.courseId).m || 0;
-    db.prepare("INSERT INTO videos (id, course_id, title, filename, path, order_idx) VALUES (?, ?, ?, ?, ?, ?)").run(nanoid(), req.body.courseId, req.body.title, req.file.filename, `/uploads/${req.file.filename}`, max + 1);
-    res.json({ success: true });
-});
-app.post('/api/videos/link', authenticate, (req, res) => {
-    const max = db.prepare('SELECT MAX(order_idx) as m FROM videos WHERE course_id = ?').get(req.body.courseId).m || 0;
-    db.prepare("INSERT INTO videos (id, course_id, title, filename, path, order_idx) VALUES (?, ?, ?, ?, ?, ?)").run(nanoid(), req.body.courseId, req.body.title, 'YouTube', req.body.url, max + 1);
-    res.json({ success: true });
-});
-
+// HARDENED REORDER LOGIC (Absolute Swap)
 app.put('/api/videos/reorder', authenticate, (req, res) => {
     if(req.user.role !== 'manager') return res.status(403).send();
     const { videoId, direction } = req.body;
     const cur = db.prepare('SELECT * FROM videos WHERE id = ?').get(videoId);
-    let sib = direction === 'up' 
+    if(!cur) return res.status(404).send();
+    const sib = direction === 'up' 
         ? db.prepare('SELECT * FROM videos WHERE course_id = ? AND order_idx < ? ORDER BY order_idx DESC LIMIT 1').get(cur.course_id, cur.order_idx)
         : db.prepare('SELECT * FROM videos WHERE course_id = ? AND order_idx > ? ORDER BY order_idx ASC LIMIT 1').get(cur.course_id, cur.order_idx);
     if(sib) {
@@ -90,33 +79,32 @@ app.put('/api/videos/reorder', authenticate, (req, res) => {
     res.json({ success: true });
 });
 
-// --- COMPILER ENGINE ---
+app.delete('/api/videos/:id', authenticate, (req, res) => {
+    db.prepare('DELETE FROM videos WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+});
+
 app.post('/api/compile', authenticate, (req, res) => {
     const { language, code, input } = req.body;
     const workDir = path.join(process.cwd(), 'temp_code', nanoid(10));
     fs.ensureDirSync(workDir);
-    const inputFile = path.join(workDir, 'input.txt');
-    fs.writeFileSync(inputFile, input || '');
+    fs.writeFileSync(path.join(workDir, 'input.txt'), input || '');
     let cmd = '';
     if (language === 'cpp') {
         fs.writeFileSync(path.join(workDir, 'sol.cpp'), code);
-        cmd = `g++ ${path.join(workDir, 'sol.cpp')} -o ${path.join(workDir, 'sol')} && ${path.join(workDir, 'sol')} < ${inputFile}`;
+        cmd = `g++ ${path.join(workDir, 'sol.cpp')} -o ${path.join(workDir, 'sol')} && ${path.join(workDir, 'sol')} < ${path.join(workDir, 'input.txt')}`;
     } else if (language === 'java') {
         fs.writeFileSync(path.join(workDir, 'Main.java'), code);
-        cmd = `javac ${path.join(workDir, 'Main.java')} && java -cp ${workDir} Main < ${inputFile}`;
+        cmd = `javac ${path.join(workDir, 'Main.java')} && java -cp ${workDir} Main < ${path.join(workDir, 'input.txt')}`;
     } else if (language === 'python') {
         fs.writeFileSync(path.join(workDir, 'script.py'), code);
-        cmd = `python3 ${path.join(workDir, 'script.py')} < ${inputFile}`;
+        cmd = `python3 ${path.join(workDir, 'script.py')} < ${path.join(workDir, 'input.txt')}`;
     }
     exec(cmd, { timeout: 5000 }, (err, stdout, stderr) => {
-        const clean = (stdout || stderr || "").replace(new RegExp(process.cwd(), 'g'), "[project]");
+        const clean = (stdout || stderr || (err ? err.message : "")).replace(new RegExp(process.cwd(), 'g'), "[project]");
         fs.remove(workDir).catch(()=>{});
         res.json({ output: clean });
     });
 });
 
-app.get('/api/users', authenticate, (req, res) => {
-    res.json(db.prepare("SELECT id, name, email, subscription_status, phone FROM users WHERE role = 'student'").all());
-});
-
-app.listen(PORT, () => console.log('🚀 Strategic Engine v0.4 Active'));
+app.listen(PORT, () => console.log('🚀 Version 0 Restoration Active'));
