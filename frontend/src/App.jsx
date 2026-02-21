@@ -18,36 +18,13 @@ const LandingPage = ({ setView }) => (
         The Charming Programmer <br/><span className="text-indigo-600">Tutoring Platform</span>
       </h1>
       <div className="text-slate-500 mb-12 max-w-2xl mx-auto space-y-2 text-left bg-slate-50 p-6 rounded-3xl border border-slate-100">
-        <p className="text-xl font-bold text-slate-800 text-center uppercase">My Name is Benjamin and I am The Charming Programmer.</p>
+        <p className="text-xl font-bold text-slate-800 text-center">My Name is Benjamin and I am The Charming Programmer.</p>
         <p className="text-lg font-medium text-center">I guide you from zero to coding your first program.</p>
       </div>
       <button onClick={()=>setView('login')} className="bg-indigo-600 text-white px-16 py-6 rounded-full font-black text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all uppercase tracking-widest">START LEARNING</button>
     </div>
     <div className="mt-32 text-[12px] text-slate-400 font-bold uppercase tracking-[0.4em]">© BENJAMIN CHAAMBWA 2025</div>
   </div>
-);
-
-const LockedModal = ({ onClose }) => (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100] animate-in fade-in duration-300 font-sans text-left">
-        <div className="bg-white p-10 rounded-[3rem] w-full max-w-md shadow-2xl border border-slate-50 relative">
-            <button onClick={onClose} className="absolute top-8 right-8 text-slate-300 hover:text-indigo-600"><X/></button>
-            <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><Lock size={40}/></div>
-            <h2 className="text-2xl font-black text-slate-900 mb-4 text-center">Unlock Premium Access</h2>
-            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
-                <p className="text-xs font-bold text-slate-700">My Name is Benjamin and I am The Charming Programmer.</p>
-                <p className="text-xs font-bold text-slate-700">Unlock this content for <span className="text-indigo-600">K30 / Month</span>.</p>
-                <div className="pt-2 space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mobile Money</p>
-                    <p className="text-xs font-bold text-indigo-600">+260 771005013 (Benjamin Chaambwa)</p>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">WhatsApp & Email</p>
-                    <p className="text-xs font-bold text-slate-700">+260 771005013<br/>benjamin@thecharmingprogrammer.com</p>
-                </div>
-            </div>
-            <button onClick={onClose} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg mt-8 active:scale-95">I Understand</button>
-        </div>
-    </div>
 );
 
 const CloudIDE = ({ defaultLang, starterCode }) => {
@@ -66,13 +43,13 @@ const CloudIDE = ({ defaultLang, starterCode }) => {
     return (
         <div className="h-full flex flex-col bg-[#1e1e1e] overflow-hidden">
             <div className="p-2 bg-[#2d2d2d] flex justify-between items-center border-b border-black shrink-0 relative z-20">
-                <select className="bg-slate-700 text-white px-3 py-1 rounded-lg text-xs outline-none border-none uppercase font-bold" value={lang} onChange={e=>setLang(e.target.value)}><option value="cpp">C++</option><option value="java">JAVA</option><option value="python">PYTHON</option></select>
-                <button onClick={run} disabled={loading} className="bg-green-600 text-white px-8 py-1.5 rounded-lg text-[10px] font-black active:scale-95 transition-all hover:bg-green-500 shadow-lg">{loading ? '...' : 'RUN'}</button>
+                <select className="bg-slate-700 text-white px-3 py-1 rounded-lg text-xs outline-none border-none font-bold" value={lang} onChange={e=>setLang(e.target.value)}><option value="cpp">C++</option><option value="java">JAVA</option><option value="python">PYTHON</option></select>
+                <button onClick={run} disabled={loading} className="bg-green-600 text-white px-10 py-1.5 rounded-lg text-[10px] font-black active:scale-95 transition-all hover:bg-green-500 shadow-lg">{loading ? '...' : 'RUN'}</button>
             </div>
             <div className="flex-1 min-h-0"><Editor height="100%" theme="vs-dark" language={lang} value={code} onChange={setCode} options={{fontSize:15, minimap:{enabled:false}, automaticLayout: true}} /></div>
-            <div className="h-1/3 bg-black flex flex-col md:flex-row border-t border-slate-800 shrink-0 overflow-auto uppercase font-bold tracking-tighter">
+            <div className="h-1/3 bg-black flex flex-col md:flex-row border-t border-slate-800 shrink-0 overflow-auto font-sans">
                 <textarea className="flex-1 bg-black text-slate-400 p-4 text-xs font-mono outline-none resize-none border-r border-slate-800" placeholder="Input..." value={input} onChange={e=>setInput(e.target.value)} />
-                <div className="flex-1 bg-black text-green-500 p-4 text-xs font-mono overflow-auto"><span className="text-indigo-400">Charming platform$ </span><pre className="inline font-medium lowercase tracking-normal">{output}</pre></div>
+                <div className="flex-1 bg-black text-green-500 p-4 text-xs font-mono overflow-auto uppercase"><span className="text-indigo-400 font-bold">Charming platform$ </span><pre className="inline font-medium lowercase tracking-normal">{output}</pre></div>
             </div>
         </div>
     );
@@ -84,25 +61,15 @@ const Classroom = ({ courseId, onExit, user }) => {
     const [tab, setTab] = useState('video');
     const [sidebar, setSidebar] = useState(true);
     const [progress, setProgress] = useState(0);
-    const [showLock, setShowLock] = useState(false);
 
     const load = () => axios.get(API + '/courses/' + courseId).then(res => { setCourse(res.data); if(res.data.videos?.length && !activeItem) setActiveItem(res.data.videos[0]); });
     useEffect(() => { load(); }, [courseId]);
 
-    const uploadVideo = async (file) => {
-        if(!file) return;
-        const fd = new FormData(); fd.append('file', file); fd.append('courseId', courseId); fd.append('title', file.name);
-        setProgress(1);
-        await axios.post(API + '/upload', fd, { onUploadProgress: (p) => setProgress(Math.round((p.loaded * 100) / p.total)) });
-        setTimeout(() => setProgress(0), 1000); load();
-    };
-
-    if(!course) return <div className="min-h-screen bg-black flex items-center justify-center font-black uppercase text-indigo-500 animate-pulse text-xs italic">Establishing connection...</div>;
+    if(!course) return <div className="min-h-screen bg-black flex items-center justify-center font-black uppercase text-indigo-500 animate-pulse text-xs italic tracking-widest text-center">Establishing integrity...</div>;
     const isSub = user.role === 'manager' || user.subscription_status === 'active';
 
     return (
         <div className="h-screen flex flex-col bg-black text-white overflow-hidden font-sans text-left">
-            {showLock && <LockedModal onClose={()=>setShowLock(false)} />}
             <div className="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center z-50 shrink-0">
                 <div className="flex items-center gap-4"><button onClick={onExit}><ArrowLeft/></button><span className="font-bold text-xs uppercase truncate max-w-[120px]">{course.title}</span></div>
                 <div className="flex gap-2">
@@ -125,27 +92,27 @@ const Classroom = ({ courseId, onExit, user }) => {
                     {user.role === 'manager' && (
                         <div className="p-4 bg-indigo-950/40 border-b border-indigo-900 shrink-0">
                             {tab === 'video' ? (
-                                <div className="flex gap-2 mb-2">
+                                <div className="flex gap-2">
                                     <button onClick={async ()=>{const t=prompt("Title:"); const u=prompt("YouTube URL:"); if(t&&u){await axios.post(API + '/videos/link',{courseId,title:t,url:u});load();}}} className="flex-1 bg-indigo-600 text-white py-2 rounded text-[10px] font-black uppercase tracking-tighter">ADD LINK</button>
-                                    <label className="flex-1 bg-slate-800 py-2 rounded text-[10px] font-black text-center cursor-pointer uppercase tracking-tighter">UPLOAD <input type="file" hidden onChange={(e)=>uploadVideo(e.target.files[0])}/></label>
+                                    <label className="flex-1 bg-slate-800 py-2 rounded text-[10px] font-black text-center cursor-pointer uppercase tracking-tighter text-center">UPLOAD <input type="file" hidden onChange={async (e)=>{if(!e.target.files[0]) return; const fd=new FormData(); fd.append('file', e.target.files[0]); fd.append('courseId', courseId); fd.append('title', e.target.files[0].name); setProgress(1); await axios.post(API + '/upload', fd, {onUploadProgress: (p)=>setProgress(Math.round((p.loaded*100)/p.total))}); setTimeout(()=>setProgress(0),1000); load();}}/></label>
                                 </div>
                             ) : (
                                 <button onClick={async ()=>{const l=prompt("Language:", course.default_lang); const e=confirm("Enable IDE for Students?"); const s=prompt("Starter Code:", course.starter_code); if(l) {await axios.put(API+'/courses/'+courseId, {title:course.title, description:course.description, default_lang:l, ide_enabled:e, starter_code:s}); load();}}} className="w-full bg-indigo-600 text-white py-2 rounded text-[10px] font-black uppercase flex items-center justify-center gap-2 shadow-lg tracking-tighter"><Settings2 size={12}/> CONFIGURE IDE</button>
                             )}
-                            {progress > 0 && <div className="mt-3 bg-slate-800 h-1 rounded-full overflow-hidden"><div className="bg-green-500 h-full transition-all" style={{width: `${progress}%`}}></div></div>}
+                            {progress > 0 && <div className="mt-3 bg-slate-800 h-1 rounded-full overflow-hidden text-center"><div className="bg-green-500 h-full transition-all" style={{width: progress + "%"}}></div></div>}
                         </div>
                     )}
                     <div className="flex-1 overflow-y-auto">
                         <div className="p-5 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800/50 italic text-left">Curriculum</div>
                         {course.videos?.map((v, i) => (
-                            <div key={v.id} onClick={() => { if(!isSub && i > 0) setShowLock(true); else { setActiveItem(v); if(window.innerWidth < 768) setSidebar(false); } }} className={"p-5 border-b border-slate-800/50 group cursor-pointer text-left " + (activeItem?.id === v.id ? 'bg-indigo-900/10' : 'hover:bg-slate-800/50')}>
+                            <div key={v.id} onClick={() => { if(!isSub && i > 0) alert("Benjamin says: Premium Content Required!"); else { setActiveItem(v); if(window.innerWidth < 768) setSidebar(false); } }} className={"p-5 border-b border-slate-800/50 group cursor-pointer text-left " + (activeItem?.id === v.id ? 'bg-indigo-900/10' : 'hover:bg-slate-800/50')}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         {(!isSub && i > 0) ? <Lock size={16} className="text-slate-700"/> : <Play size={16} className={activeItem?.id===v.id?'text-indigo-400':'text-slate-600'}/>}
                                         <span className={"text-xs " + (activeItem?.id === v.id ? 'text-white font-bold' : 'text-slate-400')}>{v.title}</span>
                                     </div>
                                     {user.role === 'manager' && (
-                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                        <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                             <button onClick={async (e)=>{e.stopPropagation(); await axios.put(API + '/videos/reorder',{videoId:v.id,direction:'up'});load();}}><ArrowUp size={14}/></button>
                                             <button onClick={async (e)=>{e.stopPropagation(); await axios.put(API + '/videos/reorder',{videoId:v.id,direction:'down'});load();}}><ArrowDown size={14}/></button>
                                             <button onClick={async (e)=>{e.stopPropagation(); const t=prompt("New name:",v.title); if(t){await axios.put(API + '/videos/' + v.id,{title:t});load();}}}><Edit size={14}/></button>
@@ -158,7 +125,7 @@ const Classroom = ({ courseId, onExit, user }) => {
                     </div>
                 </div>
             </div>
-            <div className="p-2 bg-slate-900 border-t border-slate-800 flex justify-center items-center shrink-0 font-bold"><span className="text-[9px] text-slate-600 uppercase tracking-[0.4em]">THE CHARMING PROGRAMMER | SPECTRE V0</span></div>
+            <div className="p-2 bg-slate-900 border-t border-slate-800 flex justify-center items-center shrink-0 font-bold text-center"><span className="text-[9px] text-slate-600 uppercase tracking-[0.4em]">THE CHARMING PROGRAMMER | SPECTRE V0</span></div>
         </div>
     );
 };
@@ -172,9 +139,9 @@ const Dashboard = ({ user, logout, onJoinCourse, setView }) => {
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-left">
             <nav className="p-6 bg-white border-b flex justify-between items-center sticky top-0 z-10 shrink-0 shadow-sm text-left">
                 <div className="font-bold text-indigo-700 flex items-center gap-2 text-2xl tracking-tighter">Hi, {user.name}</div>
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 items-center text-left">
                     {user?.role==='manager' && (
-                        <div className="flex bg-slate-100 p-1 rounded-full uppercase text-center">
+                        <div className="flex bg-slate-100 p-1 rounded-full uppercase">
                             <button onClick={()=>setActiveTab('platforms')} className={"px-4 py-1.5 rounded-full text-[10px] font-black transition " + (activeTab==='platforms'?'bg-white shadow-sm text-indigo-600':'text-slate-400')}>PLATFORMS</button>
                             <button onClick={()=>setActiveTab('students')} className={"px-4 py-1.5 rounded-full text-[10px] font-black transition " + (activeTab==='students'?'bg-white shadow-sm text-indigo-600':'text-slate-400')}>STUDENTS</button>
                         </div>
@@ -209,7 +176,10 @@ const Dashboard = ({ user, logout, onJoinCourse, setView }) => {
                             {users.map(u => (
                                 <div key={u.id} className="p-6 border border-slate-50 rounded-3xl flex justify-between items-center text-left hover:bg-slate-50 transition-colors">
                                     <div><p className="font-black text-slate-900 text-lg">{u.name}</p><p className="text-sm text-slate-400 font-bold uppercase leading-none tracking-tighter">{u.email} • {u.phone}</p></div>
-                                    <button onClick={async ()=>{await axios.post(API + '/users/' + u.id + '/approve');load();}} className={"px-8 py-3 rounded-2xl text-xs font-black tracking-widest transition-all " + (u.subscription_status==='active'?'bg-red-50 text-red-600':'bg-green-50 text-green-600')}>{u.subscription_status==='active'?'REVOKE':'APPROVE'}</button>
+                                    <div className="flex gap-2">
+                                        <button onClick={async ()=>{await axios.post(API + '/users/' + u.id + '/approve');load();}} className={"px-8 py-3 rounded-2xl text-xs font-black tracking-widest transition-all " + (u.subscription_status==='active'?'bg-slate-50 text-slate-300 cursor-not-allowed':'bg-green-50 text-green-600')}>APPROVE</button>
+                                        <button onClick={async ()=>{await axios.post(API + '/users/' + u.id + '/revoke');load();}} className={"px-8 py-3 rounded-2xl text-xs font-black tracking-widest transition-all " + (u.subscription_status==='inactive'?'bg-slate-50 text-slate-300 cursor-not-allowed':'bg-red-50 text-red-600')}>REVOKE</button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
