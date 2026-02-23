@@ -259,7 +259,7 @@ export default function App() {
                     <input className="w-full p-6 bg-slate-50 rounded-[2rem] mb-4 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold" type="email" placeholder="Email Address" onChange={e=>setAuth({...auth, email:e.target.value})} required/>
                     {!auth.isLogin && <input className="w-full p-6 bg-slate-50 rounded-[2rem] mb-4 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold" placeholder="Phone Number" onChange={e=>setAuth({...auth, phone:e.target.value})} required/>}
                     <input className="w-full p-6 bg-slate-50 rounded-[2rem] mb-10 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold" type="password" placeholder="Password" onChange={e=>setAuth({...auth, password:e.target.value})} required/>
-                    <button className="w-full bg-indigo-600 text-white py-6 rounded-[2.5rem] font-black text-lg shadow-xl shadow-indigo-100 transition-all uppercase tracking-widest active:scale-95">CONTINUE</button>
+                    <button className="w-full bg-indigo-600 text-white py-6 rounded-[2.5rem] font-black text-lg shadow-xl shadow-indigo-100 transition-all uppercase tracking-widest active:scale-95">CONTINUE v1.8</button>
                     <p className="mt-10 text-center text-[10px] text-indigo-600 cursor-pointer font-black tracking-widest uppercase font-black" onClick={()=>setAuth({...auth, isLogin:!auth.isLogin})}>{auth.isLogin?'Create Account':'Existing Member'}</p>
                 </form>
             )}
