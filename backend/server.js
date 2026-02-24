@@ -34,7 +34,7 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         db.prepare("INSERT INTO users (id, email, password, name, role, phone, subscription_status) VALUES (?, ?, ?, ?, 'student', ?, 'inactive')").run(nanoid(), email, hashed, name, phone || '');
         res.json({ success: true });
-    } catch (e) { res.status(400).json({ error: 'Account already exists' }); }
+    } catch (e) { res.status(400).json({ error: 'Account exists' }); }
 });
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
@@ -61,7 +61,7 @@ app.delete('/api/users/:id', authenticate, (req, res) => {
     res.json({ success: true });
 });
 
-// --- PLATFORMS COMMANDS ---
+// --- PLATFORMS (HARDENED REORDER) ---
 app.get('/api/courses', authenticate, (req, res) => {
     const data = db.prepare('SELECT * FROM courses ORDER BY order_idx ASC').all();
     res.json(data.map(c => ({...c, videoCount: db.prepare('SELECT COUNT(*) as cnt FROM videos WHERE course_id = ?').get(c.id).cnt || 0 })));
@@ -86,20 +86,17 @@ app.delete('/api/courses/:id', authenticate, (req, res) => {
 });
 app.put('/api/courses/reorder/swap', authenticate, (req, res) => {
     const { courseId, direction } = req.body;
-    const cur = db.prepare('SELECT * FROM courses WHERE id = ?').get(courseId);
-    let sib = direction === 'up' ? db.prepare('SELECT * FROM courses WHERE order_idx < ? ORDER BY order_idx DESC LIMIT 1').get(cur.order_idx) : db.prepare('SELECT * FROM courses WHERE order_idx > ? ORDER BY order_idx ASC LIMIT 1').get(cur.order_idx);
-    if(sib) {
-        db.transaction(() => {
-            const oldCur = cur.order_idx; const oldSib = sib.order_idx;
-            db.prepare('UPDATE courses SET order_idx = -1 WHERE id = ?').run(cur.id);
-            db.prepare('UPDATE courses SET order_idx = ? WHERE id = ?').run(oldCur, sib.id);
-            db.prepare('UPDATE courses SET order_idx = ? WHERE id = ?').run(oldSib, cur.id);
-        })();
-    }
+    const all = db.prepare('SELECT id FROM courses ORDER BY order_idx ASC').all();
+    const idx = all.findIndex(c => c.id === courseId);
+    if (direction === 'up' && idx > 0) { [all[idx], all[idx-1]] = [all[idx-1], all[idx]]; }
+    else if (direction === 'down' && idx < all.length - 1) { [all[idx], all[idx+1]] = [all[idx+1], all[idx]]; }
+    db.transaction(() => {
+        all.forEach((item, i) => db.prepare('UPDATE courses SET order_idx = ? WHERE id = ?').run(i, item.id));
+    })();
     res.json({ success: true });
 });
 
-// --- CLASSROOM COMMANDS ---
+// --- CLASSROOM (HARDENED REORDER) ---
 app.get('/api/courses/:id', authenticate, (req, res) => {
     const c = db.prepare('SELECT * FROM courses WHERE id = ?').get(req.params.id);
     if(c) c.videos = db.prepare('SELECT * FROM videos WHERE course_id = ? ORDER BY order_idx ASC').all(req.params.id);
@@ -116,26 +113,20 @@ app.post('/api/videos/link', authenticate, (req, res) => {
     db.prepare("INSERT INTO videos (id, course_id, title, filename, path, order_idx) VALUES (?, ?, ?, ?, ?, ?)").run(nanoid(), req.body.courseId, req.body.title, 'YouTube', req.body.url, max + 1);
     res.json({ success: true });
 });
-app.put('/api/videos/:id', authenticate, (req, res) => {
-    db.prepare('UPDATE videos SET title = ? WHERE id = ?').run(req.body.title, req.params.id);
-    res.json({ success: true });
-});
 app.delete('/api/videos/:id', authenticate, (req, res) => {
     db.prepare('DELETE FROM videos WHERE id = ?').run(req.params.id);
     res.json({ success: true });
 });
 app.put('/api/videos/reorder', authenticate, (req, res) => {
     const { videoId, direction } = req.body;
-    const cur = db.prepare('SELECT * FROM videos WHERE id = ?').get(videoId);
-    let sib = direction === 'up' ? db.prepare('SELECT * FROM videos WHERE course_id = ? AND order_idx < ? ORDER BY order_idx DESC LIMIT 1').get(cur.course_id, cur.order_idx) : db.prepare('SELECT * FROM videos WHERE course_id = ? AND order_idx > ? ORDER BY order_idx ASC LIMIT 1').get(cur.course_id, cur.order_idx);
-    if(sib) {
-        db.transaction(() => {
-            const oldCur = cur.order_idx; const oldSib = sib.order_idx;
-            db.prepare('UPDATE videos SET order_idx = -1 WHERE id = ?').run(cur.id);
-            db.prepare('UPDATE videos SET order_idx = ? WHERE id = ?').run(oldCur, sib.id);
-            db.prepare('UPDATE videos SET order_idx = ? WHERE id = ?').run(oldSib, cur.id);
-        })();
-    }
+    const vid = db.prepare('SELECT * FROM videos WHERE id = ?').get(videoId);
+    const all = db.prepare('SELECT id FROM videos WHERE course_id = ? ORDER BY order_idx ASC').all(vid.course_id);
+    const idx = all.findIndex(v => v.id === videoId);
+    if (direction === 'up' && idx > 0) { [all[idx], all[idx-1]] = [all[idx-1], all[idx]]; }
+    else if (direction === 'down' && idx < all.length - 1) { [all[idx], all[idx+1]] = [all[idx+1], all[idx]]; }
+    db.transaction(() => {
+        all.forEach((item, i) => db.prepare('UPDATE videos SET order_idx = ? WHERE id = ?').run(i, item.id));
+    })();
     res.json({ success: true });
 });
 
@@ -150,10 +141,10 @@ app.post('/api/compile', authenticate, (req, res) => {
     else if (language === 'java') { fs.writeFileSync(path.join(workDir, 'Main.java'), code); cmd = `javac ${path.join(workDir, 'Main.java')} && java -cp ${workDir} Main < ${path.join(workDir, 'input.txt')}`; }
     else if (language === 'python') { fs.writeFileSync(path.join(workDir, 'script.py'), code); cmd = `python3 ${path.join(workDir, 'script.py')} < ${path.join(workDir, 'input.txt')}`; }
     exec(cmd, { timeout: 5000 }, (err, stdout, stderr) => {
-        const clean = (stdout || stderr || "Execution finished.").replace(new RegExp(process.cwd(), 'g'), "[project]");
+        const clean = (stdout || stderr || "Finished.").replace(new RegExp(process.cwd(), 'g'), "[project]");
         fs.remove(workDir).catch(()=>{});
         res.json({ output: clean });
     });
 });
 
-app.listen(4000, () => console.log('🚀 Engine v3.4 Sovereign Active'));
+app.listen(4000, () => console.log('🚀 Final Sovereign Engine v3.5 Active'));
